@@ -1,0 +1,1399 @@
+-- RedDoors Custom GUI Library
+local RedDoors = {}
+local dragging, dragInput, dragStart, startPos
+
+function RedDoors:Window(title)
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "RedDoorsGUI"
+    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    screenGui.Parent = game:GetService("CoreGui")
+
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Name = "MainFrame"
+    mainFrame.Size = UDim2.new(0, 500, 0, 350)
+    mainFrame.Position = UDim2.new(0.5, -250, 0.5, -175)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    mainFrame.BorderSizePixel = 0
+    mainFrame.Parent = screenGui
+
+    local header = Instance.new("Frame")
+    header.Name = "Header"
+    header.Size = UDim2.new(1, 0, 0, 30)
+    header.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+    header.BorderSizePixel = 0
+    header.Parent = mainFrame
+
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.Size = UDim2.new(1, -60, 1, 0)
+    titleLabel.Position = UDim2.new(0, 10, 0, 0)
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Text = title or "RedDoors"
+    titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    titleLabel.Font = Enum.Font.GothamBold
+    titleLabel.TextSize = 14
+    titleLabel.Parent = header
+
+    local closeButton = Instance.new("TextButton")
+    closeButton.Name = "CloseButton"
+    closeButton.Size = UDim2.new(0, 30, 0, 30)
+    closeButton.Position = UDim2.new(1, -30, 0, 0)
+    closeButton.BackgroundColor3 = Color3.fromRGB(180, 0, 0)
+    closeButton.BorderSizePixel = 0
+    closeButton.Text = "X"
+    closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    closeButton.Font = Enum.Font.GothamBold
+    closeButton.TextSize = 14
+    closeButton.Parent = header
+
+    local tabContainer = Instance.new("Frame")
+    tabContainer.Name = "TabContainer"
+    tabContainer.Size = UDim2.new(1, 0, 0, 40)
+    tabContainer.Position = UDim2.new(0, 0, 0, 30)
+    tabContainer.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    tabContainer.BorderSizePixel = 0
+    tabContainer.Parent = mainFrame
+
+    local contentContainer = Instance.new("ScrollingFrame")
+    contentContainer.Name = "ContentContainer"
+    contentContainer.Size = UDim2.new(1, -20, 1, -80)
+    contentContainer.Position = UDim2.new(0, 10, 0, 70)
+    contentContainer.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    contentContainer.BorderSizePixel = 0
+    contentContainer.ScrollBarThickness = 5
+    contentContainer.ScrollBarImageColor3 = Color3.fromRGB(200, 0, 0)
+    contentContainer.Parent = mainFrame
+
+    local contentLayout = Instance.new("UIListLayout")
+    contentLayout.Name = "ContentLayout"
+    contentLayout.Padding = UDim.new(0, 5)
+    contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    contentLayout.Parent = contentContainer
+
+    -- Drag functionality
+    header.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = mainFrame.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+    
+    header.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            dragInput = input
+        end
+    end)
+    
+    game:GetService("UserInputService").InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+
+    closeButton.MouseButton1Click:Connect(function()
+        screenGui:Destroy()
+    end)
+
+    local tabs = {}
+    local currentTab = nil
+
+    function tabs:Tab(name)
+        local tabButton = Instance.new("TextButton")
+        tabButton.Name = name .. "Tab"
+        tabButton.Size = UDim2.new(0, 80, 1, 0)
+        tabButton.Position = UDim2.new(0, (#tabs - 1) * 80, 0, 0)
+        tabButton.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+        tabButton.BorderSizePixel = 0
+        tabButton.Text = name
+        tabButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+        tabButton.Font = Enum.Font.Gotham
+        tabButton.TextSize = 12
+        tabButton.Parent = tabContainer
+
+        local tabContent = Instance.new("Frame")
+        tabContent.Name = name .. "Content"
+        tabContent.Size = UDim2.new(1, 0, 1, 0)
+        tabContent.BackgroundTransparency = 1
+        tabContent.Visible = false
+        tabContent.Parent = contentContainer
+
+        local tabLayout = Instance.new("UIListLayout")
+        tabLayout.Name = "TabLayout"
+        tabLayout.Padding = UDim.new(0, 5)
+        tabLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        tabLayout.Parent = tabContent
+
+        tabButton.MouseButton1Click:Connect(function()
+            if currentTab then
+                currentTab.Visible = false
+            end
+            tabContent.Visible = true
+            currentTab = tabContent
+            
+            for _, btn in pairs(tabContainer:GetChildren()) do
+                if btn:IsA("TextButton") then
+                    btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+                end
+            end
+            tabButton.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+        end)
+
+        if not currentTab then
+            tabButton.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+            tabContent.Visible = true
+            currentTab = tabContent
+        end
+
+        local tabFunctions = {}
+
+        function tabFunctions:Toggle(text, default, callback)
+            local toggleFrame = Instance.new("Frame")
+            toggleFrame.Name = text .. "Toggle"
+            toggleFrame.Size = UDim2.new(1, 0, 0, 30)
+            toggleFrame.BackgroundTransparency = 1
+            toggleFrame.LayoutOrder = #tabContent:GetChildren()
+            toggleFrame.Parent = tabContent
+
+            local toggleButton = Instance.new("TextButton")
+            toggleButton.Name = "ToggleButton"
+            toggleButton.Size = UDim2.new(0, 30, 0, 30)
+            toggleButton.Position = UDim2.new(0, 0, 0, 0)
+            toggleButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+            toggleButton.BorderSizePixel = 0
+            toggleButton.Text = ""
+            toggleButton.Parent = toggleFrame
+
+            local toggleLabel = Instance.new("TextLabel")
+            toggleLabel.Name = "ToggleLabel"
+            toggleLabel.Size = UDim2.new(1, -40, 1, 0)
+            toggleLabel.Position = UDim2.new(0, 35, 0, 0)
+            toggleLabel.BackgroundTransparency = 1
+            toggleLabel.Text = text
+            toggleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+            toggleLabel.TextXAlignment = Enum.TextXAlignment.Left
+            toggleLabel.Font = Enum.Font.Gotham
+            toggleLabel.TextSize = 12
+            toggleLabel.Parent = toggleFrame
+
+            local state = default or false
+            
+            local function updateToggle()
+                if state then
+                    toggleButton.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+                else
+                    toggleButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+                end
+                if callback then
+                    callback(state)
+                end
+            end
+
+            toggleButton.MouseButton1Click:Connect(function()
+                state = not state
+                updateToggle()
+            end)
+
+            updateToggle()
+        end
+
+        function tabFunctions:Button(text, callback)
+            local button = Instance.new("TextButton")
+            button.Name = text .. "Button"
+            button.Size = UDim2.new(1, 0, 0, 30)
+            button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+            button.BorderSizePixel = 0
+            button.Text = text
+            button.TextColor3 = Color3.fromRGB(255, 255, 255)
+            button.Font = Enum.Font.Gotham
+            button.TextSize = 12
+            button.LayoutOrder = #tabContent:GetChildren()
+            button.Parent = tabContent
+
+            button.MouseButton1Click:Connect(function()
+                if callback then
+                    callback()
+                end
+            end)
+        end
+
+        function tabFunctions:Slider(text, min, max, step, default, callback)
+            local sliderFrame = Instance.new("Frame")
+            sliderFrame.Name = text .. "Slider"
+            sliderFrame.Size = UDim2.new(1, 0, 0, 50)
+            sliderFrame.BackgroundTransparency = 1
+            sliderFrame.LayoutOrder = #tabContent:GetChildren()
+            sliderFrame.Parent = tabContent
+
+            local sliderLabel = Instance.new("TextLabel")
+            sliderLabel.Name = "SliderLabel"
+            sliderLabel.Size = UDim2.new(1, 0, 0, 20)
+            sliderLabel.Position = UDim2.new(0, 0, 0, 0)
+            sliderLabel.BackgroundTransparency = 1
+            sliderLabel.Text = text .. ": " .. tostring(default)
+            sliderLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+            sliderLabel.TextXAlignment = Enum.TextXAlignment.Left
+            sliderLabel.Font = Enum.Font.Gotham
+            sliderLabel.TextSize = 12
+            sliderLabel.Parent = sliderFrame
+
+            local sliderTrack = Instance.new("Frame")
+            sliderTrack.Name = "SliderTrack"
+            sliderTrack.Size = UDim2.new(1, 0, 0, 5)
+            sliderTrack.Position = UDim2.new(0, 0, 0, 25)
+            sliderTrack.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+            sliderTrack.BorderSizePixel = 0
+            sliderTrack.Parent = sliderFrame
+
+            local sliderFill = Instance.new("Frame")
+            sliderFill.Name = "SliderFill"
+            sliderFill.Size = UDim2.new(0, 0, 1, 0)
+            sliderFill.Position = UDim2.new(0, 0, 0, 0)
+            sliderFill.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+            sliderFill.BorderSizePixel = 0
+            sliderFill.Parent = sliderTrack
+
+            local sliderButton = Instance.new("TextButton")
+            sliderButton.Name = "SliderButton"
+            sliderButton.Size = UDim2.new(0, 15, 0, 15)
+            sliderButton.Position = UDim2.new(0, 0, 0, -5)
+            sliderButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            sliderButton.BorderSizePixel = 0
+            sliderButton.Text = ""
+            sliderButton.Parent = sliderTrack
+
+            local value = default or min
+            local dragging = false
+
+            local function updateSlider()
+                local percent = (value - min) / (max - min)
+                sliderFill.Size = UDim2.new(percent, 0, 1, 0)
+                sliderButton.Position = UDim2.new(percent, -7, 0, -5)
+                sliderLabel.Text = text .. ": " .. tostring(value)
+                if callback then
+                    callback(value)
+                end
+            end
+
+            sliderButton.MouseButton1Down:Connect(function()
+                dragging = true
+            end)
+
+            game:GetService("UserInputService").InputEnded:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    dragging = false
+                end
+            end)
+
+            game:GetService("UserInputService").InputChanged:Connect(function(input)
+                if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+                    local relativeX = input.Position.X - sliderTrack.AbsolutePosition.X
+                    local percent = math.clamp(relativeX / sliderTrack.AbsoluteSize.X, 0, 1)
+                    value = math.floor(min + (max - min) * percent / step) * step
+                    updateSlider()
+                end
+            end)
+
+            updateSlider()
+        end
+
+        function tabFunctions:Label(text, height)
+            local label = Instance.new("TextLabel")
+            label.Name = text .. "Label"
+            label.Size = UDim2.new(1, 0, 0, height or 20)
+            label.BackgroundTransparency = 1
+            label.Text = text
+            label.TextColor3 = Color3.fromRGB(255, 255, 255)
+            label.TextXAlignment = Enum.TextXAlignment.Left
+            label.Font = Enum.Font.Gotham
+            label.TextSize = 12
+            label.TextWrapped = true
+            label.LayoutOrder = #tabContent:GetChildren()
+            label.Parent = tabContent
+        end
+
+        return tabFunctions
+    end
+
+    return tabs
+end
+
+-- Initialize RedDoors GUI
+local library = RedDoors:Window("RedDoors")
+local window_player = library:Tab("Player")
+local window_esp = library:Tab("ESP")
+local window_misc = library:Tab("Misc")
+
+-- Rest of your code follows here with all the original functionality
+-- Replace all library.window() calls with library:Tab()
+-- Replace all window.toggle() calls with window:Toggle()
+-- Replace all window.slider() calls with window:Slider()
+-- Replace all window.button() calls with window:Button()
+-- Replace all window.label() calls with window:Label()
+
+-- Your original code continues below with the new GUI system...
+local plr = game.Players.LocalPlayer
+local char = plr.Character or plr.CharacterAdded:Wait()
+local hum = char:FindFirstChildOfClass("Humanoid") or char:WaitForChild("Humanoid")
+
+if not fireproximityprompt then
+    local msg = Instance.new("Message",workspace)
+    msg.Text = "you have fireproximityprompt function bro get better executor"
+    task.wait(6)
+    msg:Destroy()
+    error("no prox") 
+end
+
+function esp(what,color,core,name)
+    local parts
+    
+    if typeof(what) == "Instance" then
+        if what:IsA("Model") then
+            parts = what:GetChildren()
+        elseif what:IsA("BasePart") then
+            parts = {what,table.unpack(what:GetChildren())}
+        end
+    elseif typeof(what) == "table" then
+        parts = what
+    end
+    
+    local bill
+    local boxes = {}
+    
+    for i,v in pairs(parts) do
+        if v:IsA("BasePart") then
+            local box = Instance.new("BoxHandleAdornment")
+            box.Size = v.Size
+            box.AlwaysOnTop = true
+            box.ZIndex = 1
+            box.AdornCullingMode = Enum.AdornCullingMode.Never
+            box.Color3 = color
+            box.Transparency = 0.7
+            box.Adornee = v
+            box.Parent = game.CoreGui
+            
+            table.insert(boxes,box)
+            
+            task.spawn(function()
+                while box do
+                    if box.Adornee == nil or not box.Adornee:IsDescendantOf(workspace) then
+                        box.Adornee = nil
+                        box.Visible = false
+                        box:Destroy()
+                    end  
+                    task.wait()
+                end
+            end)
+        end
+    end
+    
+    if core and name then
+        bill = Instance.new("BillboardGui",game.CoreGui)
+        bill.AlwaysOnTop = true
+        bill.Size = UDim2.new(0,400,0,100)
+        bill.Adornee = core
+        bill.MaxDistance = 2000
+        
+        local mid = Instance.new("Frame",bill)
+        mid.AnchorPoint = Vector2.new(0.5,0.5)
+        mid.BackgroundColor3 = color
+        mid.Size = UDim2.new(0,8,0,8)
+        mid.Position = UDim2.new(0.5,0,0.5,0)
+        Instance.new("UICorner",mid).CornerRadius = UDim.new(1,0)
+        Instance.new("UIStroke",mid)
+        
+        local txt = Instance.new("TextLabel",bill)
+        txt.AnchorPoint = Vector2.new(0.5,0.5)
+        txt.BackgroundTransparency = 1
+        txt.BackgroundColor3 = color
+        txt.TextColor3 = color
+        txt.Size = UDim2.new(1,0,0,20)
+        txt.Position = UDim2.new(0.5,0,0.7,0)
+        txt.Text = name
+        Instance.new("UIStroke",txt)
+        
+        task.spawn(function()
+            while bill do
+                if bill.Adornee == nil or not bill.Adornee:IsDescendantOf(workspace) then
+                    bill.Enabled = false
+                    bill.Adornee = nil
+                    bill:Destroy() 
+                end  
+                task.wait()
+            end
+        end)
+    end
+    
+    local ret = {}
+    
+    ret.delete = function()
+        for i,v in pairs(boxes) do
+            v.Adornee = nil
+            v.Visible = false
+            v:Destroy()
+        end
+        
+        if bill then
+            bill.Enabled = false
+            bill.Adornee = nil
+            bill:Destroy() 
+        end
+    end
+    
+    return ret 
+end
+
+local entityinfo = game.ReplicatedStorage:WaitForChild("EntityInfo")
+function message(text)
+    local msg = Instance.new("Message",workspace)
+    msg.Text = tostring(text)
+    task.wait(5)
+    msg:Destroy()
+    
+    --firesignal(entityinfo.Caption.OnClientEvent,tostring(text)) 
+end
+
+local flags = {
+    speed = 0,
+    espdoors = false,
+    espkeys = false,
+    espitems = false,
+    espbooks = false,
+    esprush = false,
+    espchest = false,
+    esplocker = false,
+    esphumans = false,
+    espgold = false,
+    goldespvalue = 0,
+    hintrush = false,
+    light = false,
+    instapp = false,
+    noseek = false,
+    nogates = false,
+    nopuzzle = false,
+    noa90 = false,
+    noskeledoors = false,
+    noscreech = false,
+    getcode = false,
+    roomsnolock = false,
+    draweraura = false,
+    autorooms = false,
+}
+
+local DELFLAGS = {table.unpack(flags)}
+local esptable = {doors={},keys={},items={},books={},entity={},chests={},lockers={},people={},gold={}}
+
+-- Player Tab
+window_player:Toggle("client glow",false,function(val)
+    flags.light = val
+   
+    if val then
+        local l = Instance.new("PointLight")
+        l.Range = 10000
+        l.Brightness = 2
+        l.Parent = char.PrimaryPart
+       
+        repeat task.wait() until not flags.light
+        l:Destroy() 
+    end
+end)
+
+window_player:Toggle("instant use",false,function(val)
+    flags.instapp = val
+    
+    local holdconnect
+    holdconnect = game:GetService("ProximityPromptService").PromptButtonHoldBegan:Connect(function(p)
+		fireproximityprompt(p)
+	end)
+    
+    repeat task.wait() until not flags.instapp
+    holdconnect:Disconnect()
+end)
+
+window_player:Slider("walkspeed",16,25,1,16,function(val)
+    hum.WalkSpeed = val
+    flags.speed = val
+end)
+
+task.spawn(function()
+    while true do
+        if hum.WalkSpeed < flags.speed then
+            hum.WalkSpeed = flags.speed
+        end
+        
+        task.wait()
+    end
+end)
+
+-- ESP Tab
+window_esp:Toggle("door esp",false,function(val)
+    flags.espdoors = val
+    
+    if val then
+        local function setup(room)
+            local door = room:WaitForChild("Door"):WaitForChild("Door")
+            
+            task.wait(0.1)
+            local h = esp(door,Color3.fromRGB(255,240,0),door,"Door")
+            table.insert(esptable.doors,h)
+            
+            door:WaitForChild("Open").Played:Connect(function()
+                h.delete()
+            end)
+            
+            door.AncestryChanged:Connect(function()
+                h.delete()
+            end)
+        end
+        
+        local addconnect
+        addconnect = workspace.CurrentRooms.ChildAdded:Connect(function(room)
+            setup(room)
+        end)
+        
+        for i,room in pairs(workspace.CurrentRooms:GetChildren()) do
+            if room:FindFirstChild("Assets") then
+                setup(room) 
+            end
+        end
+        
+        repeat task.wait() until not flags.espdoors
+        addconnect:Disconnect()
+        
+        for i,v in pairs(esptable.doors) do
+            v.delete()
+        end 
+    end
+end)
+
+window_esp:Toggle("key/lever esp",false,function(val)
+    flags.espkeys = val
+    
+    if val then
+        local function check(v)
+            if v:IsA("Model") and (v.Name == "LeverForGate" or v.Name == "KeyObtain") then
+                task.wait(0.1)
+                if v.Name == "KeyObtain" then
+                    local hitbox = v:WaitForChild("Hitbox")
+                    local parts = hitbox:GetChildren()
+                    table.remove(parts,table.find(parts,hitbox:WaitForChild("PromptHitbox")))
+                    
+                    local h = esp(parts,Color3.fromRGB(90,255,40),hitbox,"Key")
+                    table.insert(esptable.keys,h)
+                    
+                elseif v.Name == "LeverForGate" then
+                    local h = esp(v,Color3.fromRGB(90,255,40),v.PrimaryPart,"Lever")
+                    table.insert(esptable.keys,h)
+                    
+                    v.PrimaryPart:WaitForChild("SoundToPlay").Played:Connect(function()
+                        h.delete()
+                    end) 
+                end
+            end
+        end
+        
+        local function setup(room)
+            local assets = room:WaitForChild("Assets")
+            
+            assets.DescendantAdded:Connect(function(v)
+                check(v) 
+            end)
+                
+            for i,v in pairs(assets:GetDescendants()) do
+                check(v)
+            end 
+        end
+        
+        local addconnect
+        addconnect = workspace.CurrentRooms.ChildAdded:Connect(function(room)
+            setup(room)
+        end)
+        
+        for i,room in pairs(workspace.CurrentRooms:GetChildren()) do
+            if room:FindFirstChild("Assets") then
+                setup(room) 
+            end
+        end
+        
+        repeat task.wait() until not flags.espkeys
+        addconnect:Disconnect()
+        
+        for i,v in pairs(esptable.keys) do
+            v.delete()
+        end 
+    end
+end)
+
+window_esp:Toggle("item esp",false,function(val)
+    flags.espitems = val
+    
+    if val then
+        local function check(v)
+            if v:IsA("Model") and (v:GetAttribute("Pickup") or v:GetAttribute("PropType")) then
+                task.wait(0.1)
+                
+                local part = (v:FindFirstChild("Handle") or v:FindFirstChild("Prop"))
+                local h = esp(part,Color3.fromRGB(160,190,255),part,v.Name)
+                table.insert(esptable.items,h)
+            end
+        end
+        
+        local function setup(room)
+            local assets = room:WaitForChild("Assets")
+            
+            if assets then  
+                local subaddcon
+                subaddcon = assets.DescendantAdded:Connect(function(v)
+                    check(v) 
+                end)
+                
+                for i,v in pairs(assets:GetDescendants()) do
+                    check(v)
+                end
+                
+                task.spawn(function()
+                    repeat task.wait() until not flags.espitems
+                    subaddcon:Disconnect()  
+                end) 
+            end 
+        end
+        
+        local addconnect
+        addconnect = workspace.CurrentRooms.ChildAdded:Connect(function(room)
+            setup(room)
+        end)
+        
+        for i,room in pairs(workspace.CurrentRooms:GetChildren()) do
+            if room:FindFirstChild("Assets") then
+                setup(room) 
+            end
+        end
+        
+        repeat task.wait() until not flags.espitems
+        addconnect:Disconnect()
+        
+        for i,v in pairs(esptable.items) do
+            v.delete()
+        end 
+    end
+end)
+
+window_esp:Toggle("book/breaker esp",false,function(val)
+    flags.espbooks = val
+    
+    if val then
+        local function check(v)
+            if v:IsA("Model") and (v.Name == "LiveHintBook" or v.Name == "LiveBreakerPolePickup") then
+                task.wait(0.1)
+                
+                local h = esp(v,Color3.fromRGB(160,190,255),v.PrimaryPart,"Book")
+                table.insert(esptable.books,h)
+                
+                v.AncestryChanged:Connect(function()
+                    if not v:IsDescendantOf(room) then
+                        h.delete() 
+                    end
+                end)
+            end
+        end
+        
+        local function setup(room)
+            if room.Name == "50" or room.Name == "100" then
+                room.DescendantAdded:Connect(function(v)
+                    check(v) 
+                end)
+                
+                for i,v in pairs(room:GetDescendants()) do
+                    check(v)
+                end
+            end
+        end
+        
+        local addconnect
+        addconnect = workspace.CurrentRooms.ChildAdded:Connect(function(room)
+            setup(room)
+        end)
+        
+        for i,room in pairs(workspace.CurrentRooms:GetChildren()) do
+            setup(room) 
+        end
+        
+        repeat task.wait() until not flags.espbooks
+        addconnect:Disconnect()
+        
+        for i,v in pairs(esptable.books) do
+            v.delete()
+        end 
+    end
+end)
+
+local entitynames = {"RushMoving","AmbushMoving","Snare","A60","A120"}
+
+window_player:Label("credits: zoophiliaphobic#6287\noh my dayyzz",20)
+window_esp:Toggle("entity esp",false,function(val)
+    flags.esprush = val
+    
+    if val then
+        local addconnect
+        addconnect = workspace.ChildAdded:Connect(function(v)
+            if table.find(entitynames,v.Name) then
+                task.wait(0.1)
+                
+                local h = esp(v,Color3.fromRGB(255,25,25),v.PrimaryPart,v.Name:gsub("Moving",""))
+                table.insert(esptable.entity,h)
+            end
+        end)
+        
+        local function setup(room)
+            if room.Name == "50" or room.Name == "100" then
+                local figuresetup = room:WaitForChild("FigureSetup")
+            
+                if figuresetup then
+                    local fig = figuresetup:WaitForChild("FigureRagdoll")
+                    task.wait(0.1)
+                    
+                    local h = esp(fig,Color3.fromRGB(255,25,25),fig.PrimaryPart,"Figure")
+                    table.insert(esptable.entity,h)
+                end 
+            else
+                local assets = room:WaitForChild("Assets")
+                
+                local function check(v)
+                    if v:IsA("Model") and table.find(entitynames,v.Name) then
+                        task.wait(0.1)
+                        
+                        local h = esp(v:WaitForChild("Base"),Color3.fromRGB(255,25,25),v.Base,"Snare")
+                        table.insert(esptable.entity,h)
+                    end
+                end
+                
+                assets.DescendantAdded:Connect(function(v)
+                    check(v) 
+                end)
+                
+                for i,v in pairs(assets:GetDescendants()) do
+                    check(v)
+                end
+            end 
+        end
+        
+        local roomconnect
+        roomconnect = workspace.CurrentRooms.ChildAdded:Connect(function(room)
+            setup(room)
+        end)
+        
+        for i,v in pairs(workspace.CurrentRooms:GetChildren()) do
+            setup(room) 
+        end
+        
+        repeat task.wait() until not flags.esprush
+        addconnect:Disconnect()
+        roomconnect:Disconnect()
+        
+        for i,v in pairs(esptable.entity) do
+            v.delete()
+        end 
+    end
+end)
+
+window_esp:Toggle("locker esp",false,function(val)
+    flags.esplocker = val
+    
+    if val then
+        local function check(v)
+            if v:IsA("Model") then
+                task.wait(0.1)
+                if v.Name == "Wardrobe" then
+                    local h = esp(v.PrimaryPart,Color3.fromRGB(145,100,25),v.PrimaryPart,"Closet")
+                    table.insert(esptable.lockers,h) 
+                elseif (v.Name == "Rooms_Locker" or v.Name == "Rooms_Locker_Fridge") then
+                    local h = esp(v.PrimaryPart,Color3.fromRGB(145,100,25),v.PrimaryPart,"Locker")
+                    table.insert(esptable.lockers,h) 
+                end
+            end
+        end
+        
+        local function setup(room)
+            local assets = room:WaitForChild("Assets")
+            
+            if assets then
+                local subaddcon
+                subaddcon = assets.DescendantAdded:Connect(function(v)
+                    check(v) 
+                end)
+                
+                for i,v in pairs(assets:GetDescendants()) do
+                    check(v)
+                end
+                
+                task.spawn(function()
+                    repeat task.wait() until not flags.esplocker
+                    subaddcon:Disconnect() 
+                end) 
+            end 
+        end
+        
+        local addconnect
+        addconnect = workspace.CurrentRooms.ChildAdded:Connect(function(room)
+            setup(room)
+        end)
+        
+        for i,v in pairs(workspace.CurrentRooms:GetChildren()) do
+            setup(room) 
+        end
+        
+        repeat task.wait() until not flags.esplocker
+        addconnect:Disconnect()
+        
+        for i,v in pairs(esptable.lockers) do
+            v.delete()
+        end 
+    end
+end)
+
+window_esp:Toggle("chest esp",false,function(val)
+    flags.espchest = val
+    
+    if val then
+        local function check(v)
+            if v:IsA("Model") then
+                task.wait(0.1)
+                if v.Name == "ChestBox" then
+                    warn(v.Name)
+                    local h = esp(v,Color3.fromRGB(205,120,255),v.PrimaryPart,"Chest")
+                    table.insert(esptable.chests,h) 
+                elseif v.Name == "ChestBoxLocked" then
+                    local h = esp(v,Color3.fromRGB(255,120,205),v.PrimaryPart,"Locked Chest")
+                    table.insert(esptable.chests,h) 
+                end
+            end
+        end
+        
+        local function setup(room)
+            local subaddcon
+            subaddcon = room.DescendantAdded:Connect(function(v)
+                check(v) 
+            end)
+            
+            for i,v in pairs(room:GetDescendants()) do
+                check(v)
+            end
+            
+            task.spawn(function()
+                repeat task.wait() until not flags.espchest
+                subaddcon:Disconnect()  
+            end)  
+        end
+        
+        local addconnect
+        addconnect = workspace.CurrentRooms.ChildAdded:Connect(function(room)
+            setup(room)
+        end)
+        
+        for i,room in pairs(workspace.CurrentRooms:GetChildren()) do
+            if room:FindFirstChild("Assets") then
+                setup(room) 
+            end
+        end
+        
+        repeat task.wait() until not flags.espchest
+        addconnect:Disconnect()
+        
+        for i,v in pairs(esptable.chests) do
+            v.delete()
+        end 
+    end
+end)
+
+window_esp:Toggle("player esp",false,function(val)
+    flags.esphumans = val
+    
+    if val then
+        local function personesp(v)
+            v.CharacterAdded:Connect(function(vc)
+                local vh = vc:WaitForChild("Humanoid")
+                local torso = vc:WaitForChild("UpperTorso")
+                task.wait(0.1)
+                
+                local h = esp(vc,Color3.fromRGB(255,255,255),torso,v.DisplayName)
+                table.insert(esptable.people,h) 
+            end)
+            
+            if v.Character then
+                local vc = v.Character
+                local vh = vc:WaitForChild("Humanoid")
+                local torso = vc:WaitForChild("UpperTorso")
+                task.wait(0.1)
+                
+                local h = esp(vc,Color3.fromRGB(255,255,255),torso,v.DisplayName)
+                table.insert(esptable.people,h) 
+            end
+        end
+        
+        local addconnect
+        addconnect = game.Players.PlayerAdded:Connect(function(v)
+            if v ~= plr then
+                personesp(v)
+            end
+        end)
+        
+        for i,v in pairs(game.Players:GetPlayers()) do
+            if v ~= plr then
+                personesp(v) 
+            end
+        end
+        
+        repeat task.wait() until not flags.esphumans
+        addconnect:Disconnect()
+        
+        for i,v in pairs(esptable.people) do
+            v.delete()
+        end 
+    end
+end)
+
+window_esp:Toggle("goldpile esp",false,function(val)
+    flags.espgold = val
+    
+    if val then
+        local function check(v)
+            if v:IsA("Model") then
+                task.wait(0.1)
+                local goldvalue = v:GetAttribute("GoldValue")
+                
+                if goldvalue and goldvalue >= flags.goldespvalue then
+                    local hitbox = v:WaitForChild("Hitbox")
+                    local h = esp(hitbox:GetChildren(),Color3.fromRGB(255,255,0),hitbox,"GoldPile [".. tostring(goldvalue).."]")
+                    table.insert(esptable.gold,h)
+                end
+            end
+        end
+        
+        local function setup(room)
+            local assets = room:WaitForChild("Assets")
+            
+            local subaddcon
+            subaddcon = assets.DescendantAdded:Connect(function(v)
+                check(v) 
+            end)
+            
+            for i,v in pairs(assets:GetDescendants()) do
+                check(v)
+            end
+            
+            task.spawn(function()
+                repeat task.wait() until not flags.espchest
+                subaddcon:Disconnect()  
+            end)  
+        end
+        
+        local addconnect
+        addconnect = workspace.CurrentRooms.ChildAdded:Connect(function(room)
+            setup(room)
+        end)
+        
+        for i,room in pairs(workspace.CurrentRooms:GetChildren()) do
+            if room:FindFirstChild("Assets") then
+                setup(room) 
+            end
+        end
+        
+        repeat task.wait() until not flags.espgold
+        addconnect:Disconnect()
+        
+        for i,v in pairs(esptable.gold) do
+            v.delete()
+        end 
+    end
+end)
+
+window_esp:Slider("minimum gold value",5,150,5,25,function(val)
+    flags.goldespvalue = val
+end)
+
+window_misc:Toggle("notify entities",false,function(val)
+    flags.hintrush = val
+    
+    if val then
+        local addconnect
+        addconnect = workspace.ChildAdded:Connect(function(v)
+            if table.find(entitynames,v.Name) then
+                repeat task.wait() until plr:DistanceFromCharacter(v:GetPivot().Position) < 1000 or not v:IsDescendantOf(workspace)
+                
+                if v:IsDescendantOf(workspace) then
+                    message(v.Name:gsub("Moving",""):lower().." is coming go hide")
+                end
+                end
+            end) 
+        
+        repeat task.wait() until not flags.hintrush
+        addconnect:Disconnect()
+    end
+end)
+
+window_misc:Toggle("disable seek chase",false,function(val)
+    flags.noseek = val
+    
+    if val then
+        local addconnect
+        addconnect = workspace.CurrentRooms.ChildAdded:Connect(function(room)
+            local trigger = room:WaitForChild("TriggerEventCollision",2)
+            
+            if trigger then
+                trigger:Destroy() 
+            end
+        end)
+        
+        repeat task.wait() until not flags.noseek
+        addconnect:Disconnect()
+    end
+end)
+
+window_misc:Toggle("delete gates",false,function(val)
+    flags.nogates = val
+    
+    if val then
+        local addconnect
+        addconnect = workspace.CurrentRooms.ChildAdded:Connect(function(room)
+            local gate = room:WaitForChild("Gate",2)
+            
+            if gate then
+                local door = gate:WaitForChild("ThingToOpen",2)
+                
+                if door then
+                    door:Destroy() 
+                end
+            end
+        end)
+        
+        repeat task.wait() until not flags.nogates
+        addconnect:Disconnect()
+    end
+end)
+
+window_misc:Toggle("delete puzzle door",false,function(val)
+    flags.nopuzzle = val
+    
+    if val then
+        local addconnect
+        addconnect = workspace.CurrentRooms.ChildAdded:Connect(function(room)
+            local assets = room:WaitForChild("Assets")
+            local paintings = assets:WaitForChild("Paintings",2)
+            
+            if paintings then
+                local door = paintings:WaitForChild("MovingDoor",2)
+            
+                if door then
+                    door:Destroy() 
+                end 
+            end
+        end)
+        
+        repeat task.wait() until not flags.nopuzzle
+        addconnect:Disconnect()
+    end
+end)
+
+local screechremote = entityinfo:FindFirstChild("Screech")
+
+if screechremote then
+    window_misc:Toggle("harmless screech",false,function(val)
+        flags.noscreech = val
+        
+        if val then
+            screechremote.Parent = nil
+            repeat task.wait() until not flags.noscreech
+            screechremote.Parent = entityinfo
+        end
+    end)
+end
+
+window_misc:Toggle("no skeleton doors",false,function(val)
+    flags.noskeledoors = val
+    
+    if val then
+        local addconnect
+        addconnect = workspace.CurrentRooms.ChildAdded:Connect(function(room)
+            local door = room:WaitForChild("Wax_Door",2)
+            
+            if door then
+                door:Destroy() 
+            end
+        end)
+        
+        repeat task.wait() until not flags.noskeledoors
+        addconnect:Disconnect()
+    end
+end)
+
+window_misc:Toggle("auto library code",false,function(val)
+    flags.getcode = val
+    
+    if val then
+        local function deciphercode()
+        local paper = char:FindFirstChild("LibraryHintPaper")
+        local hints = plr.PlayerGui:WaitForChild("PermUI"):WaitForChild("Hints")
+        
+        local code = {[1]="_",[2]="_",[3]="_",[4]="_",[5]="_"}
+            
+            if paper then
+                for i,v in pairs(paper:WaitForChild("UI"):GetChildren()) do
+                    if v:IsA("ImageLabel") and v.Name ~= "Image" then
+                        for i,img in pairs(hints:GetChildren()) do
+                            if img:IsA("ImageLabel") and img.Visible and v.ImageRectOffset == img.ImageRectOffset then
+                                local num = img:FindFirstChild("TextLabel").Text
+                                
+                                code[tonumber(v.Name)] = num 
+                            end
+                        end
+                    end
+                end 
+            end
+            
+            return code
+        end
+        
+        local addconnect
+        addconnect = char.ChildAdded:Connect(function(v)
+            if v:IsA("Tool") and v.Name == "LibraryHintPaper" then
+                task.wait()
+                
+                local code = table.concat(deciphercode())
+                
+                if code:find("_") then
+                    message("get all hints first")
+                else
+                    message("the code is ".. code)
+                end
+            end
+        end)
+        
+        repeat task.wait() until not flags.getcode
+        addconnect:Disconnect()
+    end
+end)
+
+window_misc:Toggle("A-000 door no locks",false,function(val)
+    flags.roomsnolock = val
+    
+    if val then
+        local function check(room)
+            local door = room:WaitForChild("RoomsDoor_Entrance",2)
+            
+            if door then
+                local prompt = door:WaitForChild("Door"):WaitForChild("EnterPrompt")
+                prompt.Enabled = true
+            end 
+        end
+        
+        local addconnect
+        addconnect = workspace.CurrentRooms.ChildAdded:Connect(function(room)
+            check(room)
+        end)
+        
+        for i,v in pairs(workspace.CurrentRooms:GetChildren()) do
+            check(room)
+        end
+        
+        repeat task.wait() until not flags.roomsnolock
+        addconnect:Disconnect()
+    end
+end)
+
+window_misc:Toggle("loot aura",false,function(val)
+    flags.draweraura = val
+    
+    if val then
+        local function setup(room)
+            local function check(v)
+                if v:IsA("Model") then
+                    if v.Name == "DrawerContainer" then
+                        local knob = v:WaitForChild("Knobs")
+                        
+                        if knob then
+                            local prompt = knob:WaitForChild("ActivateEventPrompt")
+                            local interactions = prompt:GetAttribute("Interactions")
+                            
+                            if not interactions then
+                                task.spawn(function()
+                                    repeat task.wait(0.1)
+                                        if plr:DistanceFromCharacter(knob.Position) <= 12 then
+                                            fireproximityprompt(prompt)
+                                        end
+                                    until prompt:GetAttribute("Interactions") or not flags.draweraura
+                                end)
+                            end
+                        end
+                    elseif v.Name == "GoldPile" then
+                        local prompt = v:WaitForChild("LootPrompt")
+                        local interactions = prompt:GetAttribute("Interactions")
+                            
+                        if not interactions then
+                            task.spawn(function()
+                                repeat task.wait(0.1)
+                                    if plr:DistanceFromCharacter(v.PrimaryPart.Position) <= 12 then
+                                        fireproximityprompt(prompt) 
+                                    end
+                                until prompt:GetAttribute("Interactions") or not flags.draweraura
+                            end)
+                        end
+                    elseif v.Name:sub(1,8) == "ChestBox" then
+                        local prompt = v:WaitForChild("ActivateEventPrompt")
+                        local interactions = prompt:GetAttribute("Interactions")
+                        
+                        if not interactions then
+                            task.spawn(function()
+                                repeat task.wait(0.1)
+                                    if plr:DistanceFromCharacter(v.PrimaryPart.Position) <= 12 then
+                                        fireproximityprompt(prompt)
+                                    end
+                                until prompt:GetAttribute("Interactions") or not flags.draweraura
+                            end)
+                        end
+                    elseif v.Name == "RolltopContainer" then
+                        local prompt = v:WaitForChild("ActivateEventPrompt")
+                        local interactions = prompt:GetAttribute("Interactions")
+                        
+                        if not interactions then
+                            task.spawn(function()
+                                repeat task.wait(0.1)
+                                    if plr:DistanceFromCharacter(v.PrimaryPart.Position) <= 12 then
+                                        fireproximityprompt(prompt)
+                                    end
+                                until prompt:GetAttribute("Interactions") or not flags.draweraura
+                            end)
+                        end
+                    end 
+                end
+            end
+    
+            local subaddcon
+            subaddcon = room.DescendantAdded:Connect(function(v)
+                check(v) 
+            end)
+            
+            for i,v in pairs(room:GetDescendants()) do
+                check(v)
+            end
+            
+            task.spawn(function()
+                repeat task.wait() until not flags.draweraura
+                subaddcon:Disconnect() 
+            end)
+        end
+        
+        local addconnect
+        addconnect = workspace.CurrentRooms.ChildAdded:Connect(function(room)
+            setup(room)
+        end)
+        
+        for i,room in pairs(workspace.CurrentRooms:GetChildren()) do
+            if room:FindFirstChild("Assets") then
+                setup(room) 
+            end
+        end
+        
+        repeat task.wait() until not flags.draweraura
+        addconnect:Disconnect()
+    end
+end)
+
+window_misc:Label("bypass anticheat makes it so you CANT pick up ANYthing so only do this in multiplayer or in the rooms area",32)
+
+window_misc:Button("bypass anticheat",function()
+    local newhum = hum:Clone()
+    newhum.Name = "humlol"
+    newhum.Parent = char
+    task.wait()
+    hum.Parent = nil
+    
+    hum = newhum
+    -- walkspeedslider.setmax(100) -- Эта функция не реализована в кастомном GUI
+end)
+
+if game.ReplicatedStorage:WaitForChild("GameData"):WaitForChild("Floor").Value == "Rooms" then
+    local window_rooms = library:Tab("the rooms")
+    
+    local a90remote = game.ReplicatedStorage:WaitForChild("EntityInfo"):WaitForChild("A90")
+    
+    window_rooms:Toggle("harmless A90",false,function(val)
+        flags.noa90 = val
+        
+        if val  then
+            local jumpscare = plr.PlayerGui:WaitForChild("MainUI"):WaitForChild("Jumpscare"):FindFirstChild("Jumpscare_A90")
+           
+            if jumpscare then
+                jumpscare.Parent = nil
+                
+                a90remote.Parent = nil
+                repeat task.wait()
+                    game.SoundService.Main.Volume = 1 
+                until not flags.noa90
+                jumpscare.Parent = plr.PlayerGui.MainUI.Jumpscare
+                a90remote.Parent = entityinfo 
+            end
+        end
+    end)
+    
+    window_rooms:Toggle("auto a-1000",false,function(val)
+        flags.autorooms = val
+        
+        if val then
+            local hide = false
+
+            local function getrecentroom(index)
+                local rooms = workspace.CurrentRooms:GetChildren() 
+                table.sort(rooms,function(a,b)
+                    return tonumber(a.Name) > tonumber(b.Name) 
+                end)
+                
+                return rooms[index]
+            end
+            
+            local entconnect
+            entconnect = workspace.ChildAdded:Connect(function(v)
+                if v:IsA("Model") then
+                    if v.Name == "A60" or v.Name == "A120" then
+                        hide = true
+                        
+                        repeat task.wait() until not v:IsDescendantOf(workspace)
+                        hide = false
+                    end
+                end
+            end)
+            
+            while flags.autorooms do
+                local room = getrecentroom(2)
+                local door = room:WaitForChild("Door")
+                local dpos = door:GetPivot()
+                
+                if hide then
+                    repeat task.wait()
+                        char:PivotTo(dpos+Vector3.new(0,150,0))
+                    until not hide
+                else
+                    repeat task.wait()
+                        char:PivotTo(dpos)
+                    until lastroom ~= room or not flags.autorooms
+                end
+                
+                task.wait()
+            end
+            entconnect:Disconnect()
+        end
+    end)
+end
+
+window_misc:Button("close gui",function()
+    flags = DELFLAGS
+    
+    task.wait()
+    game:GetService("CoreGui").RedDoorsGUI:Destroy()
+end)
