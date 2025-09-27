@@ -1,1 +1,4 @@
-
+{
+	"Version": "FUCKYOUSKID",
+	"Announcement": "pidor"
+}
